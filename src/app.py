@@ -253,3 +253,6 @@ mi_carrito.quitar(1, 1, mi_inventario)
 mi_carrito.mostrar()
 # Mostramos el inventario
 mi_inventario.listar_productos()
+
+
+
