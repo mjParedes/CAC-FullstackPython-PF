@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from colores import arrayColores
+from otros.colores import arrayColores
 
 app = Flask(__name__)
 
