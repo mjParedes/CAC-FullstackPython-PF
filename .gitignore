@@ -4,3 +4,8 @@ etapa2/tests/__pycache__/
 
 etapa1/__pycache__/
 
+cars-restapi/.venv/
+
+cars-restapi/__pycache__/
+cars-restapi/resouses/__pycache__/
+
