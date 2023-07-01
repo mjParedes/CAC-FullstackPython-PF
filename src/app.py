@@ -1,4 +1,8 @@
 import sqlite3
+from flask import Flask, jsonify, request
+
+
+
 
 from flask import Flask, jsonify, request
 
@@ -11,12 +15,16 @@ DATABASE = 'inventario.db'
 
 def get_db_connection():
 
+
     print("Obteniendo conexión...")  # Para probar que se ejecuta la función
 
     conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
+
+# Crear la tabla 'productos' si no existe
+def create_table():
 
 
 # Crear la tabla 'productos' si no existe
@@ -37,6 +45,9 @@ def create_table():
             descripcion TEXT NOT NULL,
             cantidad INTEGER NOT NULL,
             precio REAL NOT NULL
+        )
+    ''')
+
 
         )
     ''')
@@ -48,6 +59,9 @@ def create_table():
     conn.close()
 
 
+# Verificar si la base de datos existe, si no, crearla y crear la tabla
+def create_database():
+
 
 # Verificar si la base de datos existe, si no, crearla y crear la tabla
 def create_database():
@@ -58,6 +72,7 @@ def create_database():
 def create_database():
     print("Creando la BD...")  # Para probar que se ejecuta la función
 
+ 
     conn = sqlite3.connect(DATABASE)
     conn.close()
     create_table()
@@ -100,6 +115,8 @@ class Inventario:
         producto_existente = self.consultar_producto(codigo)
         if producto_existente:
             return jsonify({'message': 'Ya existe un producto con ese código.'}), 400
+        nuevo_producto = Producto(codigo, descripcion, cantidad, precio)
+
         
         sql = f'INSERT INTO productos VALUES ({codigo}, "{descripcion}", {cantidad}, {precio});'
         self.cursor.execute(sql)
@@ -212,6 +229,12 @@ class Carrito:
         return jsonify(productos_carrito), 200
 
 
+
+
+
+#--------------------------FLASK --------------------
+
+
 app = Flask(__name__)
 
 
@@ -236,6 +259,7 @@ def obtener_producto(codigo):
 def index():
     return 'API de Inventario'
 
+
 # Ruta para agregar un producto al inventario
 @app.route('/productos', methods=['POST'])
 def agregar_producto():
@@ -244,6 +268,16 @@ def agregar_producto():
     cantidad = request.json.get('cantidad')
     precio = request.json.get('precio')
     return inventario.agregar_producto(codigo, descripcion, cantidad, precio)
+
+
+# Ruta para modificar un producto del inventario
+
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({'message': 'pong!'})
+    
+
 
 
 # Ruta para agregar un producto al inventario
@@ -256,6 +290,7 @@ def agregar_producto():
     return inventario.agregar_producto(codigo, descripcion, cantidad, precio)
 
 # Ruta para modificar un producto del inventario
+
 @app.route('/productos/<int:codigo>', methods=['PUT'])
 def modificar_producto(codigo):
     nueva_descripcion = request.json.get('descripcion')
@@ -291,8 +326,11 @@ def obtener_carrito():
 
 # Finalmente, si estamos ejecutando este archivo, lanzamos app.
 if __name__ == '__main__':
+
+    app.run(debug=True, port=3000)
+
     app.run()
-=======
+
             print(
                 f'{item.codigo}\t{item.descripcion}\t{item.cantidad}\t{item.precio}')
         print("-"*50)
@@ -372,6 +410,7 @@ mi_carrito.quitar(1, 1, mi_inventario)
 mi_carrito.mostrar()
 # Mostramos el inventario
 mi_inventario.listar_productos()
+
 
 
 
