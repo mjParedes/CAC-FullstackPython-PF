@@ -73,7 +73,7 @@ class Inventario:
         producto_existente = self.consultar_producto(codigo)
         if producto_existente:
             return jsonify({'message': 'Ya existe un producto con ese código.'}), 400
-        
+        nuevo_producto = Producto(codigo, descripcion, cantidad, precio)
         sql = f'INSERT INTO productos VALUES ({codigo}, "{descripcion}", {cantidad}, {precio});'
         self.cursor.execute(sql)
         self.conexion.commit()
