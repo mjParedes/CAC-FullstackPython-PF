@@ -1,4 +1,5 @@
 import sqlite3
+from flask import Flask, jsonify, request
 
 
 # Configurar la conexión a la base de datos SQLite
@@ -21,7 +22,8 @@ def create_table():
             descripcion TEXT NOT NULL,
             cantidad INTEGER NOT NULL,
             precio REAL NOT NULL
-        ) ''')
+        )
+    ''')
     conn.commit()
     cursor.close()
     conn.close()
@@ -32,6 +34,11 @@ def create_database():
     conn = sqlite3.connect(DATABASE)
     conn.close()
     create_table()
+
+
+# Programa principal
+# Crear la base de datos y la tabla si no existen
+create_database()
 
 
 class Producto:
@@ -50,17 +57,30 @@ class Producto:
         self.precio = nuevo_precio            # Modifica el precio
 
 
+
+
+#INVENTARIO
+
+class Inventario:
+    # Definimos el constructor e inicializamos los atributos de instancia
+    def __init__(self):
+        self.conexion = get_db_connection()
+        self.cursor = self.conexion.cursor()
+
+
+    # Este método permite crear objetos de la clase "Producto" y agregarlos al inventario.
     def agregar_producto(self, codigo, descripcion, cantidad, precio):
         producto_existente = self.consultar_producto(codigo)
         if producto_existente:
-            print("Ya existe un producto con ese código.")
-            return False
-        nuevo_producto = Producto(codigo, descripcion, cantidad, precio)
+            return jsonify({'message': 'Ya existe un producto con ese código.'}), 400
+        
         sql = f'INSERT INTO productos VALUES ({codigo}, "{descripcion}", {cantidad}, {precio});'
         self.cursor.execute(sql)
         self.conexion.commit()
-        return True
-    
+        return jsonify({'message': 'Producto agregado correctamente.'}), 200
+
+    # Este método permite consultar datos de productos que están en el inventario
+    # Devuelve el producto correspondiente al código proporcionado o False si no existe.
     def consultar_producto(self, codigo):
         sql = f'SELECT * FROM productos WHERE codigo = {codigo};'
         self.cursor.execute(sql)
@@ -68,57 +88,7 @@ class Producto:
         if row:
             codigo, descripcion, cantidad, precio = row
             return Producto(codigo, descripcion, cantidad, precio)
-        return False
-    
-    def modificar_producto(self, codigo, nueva_descripcion, nueva_cantidad, nuevo_precio):
-        producto = self.consultar_producto(codigo)
-        if producto:
-            producto.modificar(nueva_descripcion, nueva_cantidad, nuevo_precio)
-            sql = f'UPDATE productos SET descripcion = "{nueva_descripcion}", cantidad = {nueva_cantidad}, precio = {nuevo_precio} WHERE codigo = {codigo};' 
-            self.cursor.execute(sql)
-            self.conexion.commit()
-            
-    def eliminar_producto(self, codigo):
-        sql = f'DELETE FROM productos WHERE codigo = {codigo};' 
-        self.cursor.execute(sql)
-        if self.cursor.rowcount > 0:
-            print(f'Producto {codigo} eliminado.')
-            self.conexion.commit()
-        else:
-            print(f'Producto {codigo} no encontrado.')
-
-    def listar_productos(self):
-        print("-"*50)
-        print("Lista de productos en el inventario:")
-        print("Código\tDescripción\tCant\tPrecio")
-        self.cursor.execute("SELECT * FROM productos")
-        rows = self.cursor.fetchall()
-        for row in rows:
-            codigo, descripcion, cantidad, precio = row
-            print(f'{codigo}\t{descripcion}\t{cantidad}\t{precio}')
-        print("-"*50)
-
-#INVENTARIO
-
-class Inventario:
-    # Definimos el constructor e inicializamos los atributos de instancia
-    def __init__(self):
-        self.productos = []  # Lista de productos en el inventario (variable de clase)
-
-
-    # Este método permite crear objetos de la clase "Producto" y agregarlos al inventario.
-    def agregar_producto(self, codigo, descripcion, cantidad, precio):
-        nuevo_producto = Producto(codigo, descripcion, cantidad, precio)
-        self.productos.append(nuevo_producto)  # Agrega un nuevo producto a la lista
-
-
-    # Este método permite consultar datos de productos que están en el inventario
-    # Devuelve el producto correspondiente al código proporcionado o False si no existe.
-    def consultar_producto(self, codigo):
-        for producto in self.productos:
-            if producto.codigo == codigo:
-                return producto # Retorna un objeto
-        return False
+        return None
 
 
     # Este método permite modificar datos de productos que están en el inventario
@@ -127,30 +97,33 @@ class Inventario:
         producto = self.consultar_producto(codigo)
         if producto:
             producto.modificar(nueva_descripcion, nueva_cantidad, nuevo_precio)
+            sql = f'UPDATE productos SET descripcion = "{nueva_descripcion}", cantidad = {nueva_cantidad}, precio = {nuevo_precio} WHERE codigo = {codigo};' 
+            self.cursor.execute(sql)
+            self.conexion.commit()
+            return jsonify({'message': 'Producto modificado correctamente.'}), 200
+        return jsonify({'message': 'Producto no encontrado.'}), 404
 
 
     # Este método elimina el producto indicado por codigo de la lista mantenida en el inventario.
     def eliminar_producto(self, codigo):
-        eliminar = False
-        for producto in self.productos:
-            if producto.codigo == codigo:
-                eliminar = True
-                producto_eliminar = producto       
-        if eliminar == True:
-            self.productos.remove(producto_eliminar)
-            print(f'Producto {codigo} eliminado.')
-        else:
-            print(f'Producto {codigo} no encontrado.')
+        sql = f'DELETE FROM productos WHERE codigo = {codigo};' 
+        self.cursor.execute(sql)
+        if self.cursor.rowcount > 0:
+            self.conexion.commit()
+            return jsonify({'message': 'Producto eliminado correctamente.'}), 200
+        return jsonify({'message': 'Producto no encontrado.'}), 404
 
 
     # Este método imprime en la terminal una lista con los datos de los productos que figuran en el inventario.
     def listar_productos(self):
-        print("-"*50)
-        print("Lista de productos en el inventario:")
-        print("Código\tDescripción\t\tCant\tPrecio")
-        for producto in self.productos:
-            print(f'{producto.codigo}\t{producto.descripcion}\t{producto.cantidad}\t{producto.precio}')
-        print("-"*50)
+        self.cursor.execute("SELECT * FROM productos")
+        rows = self.cursor.fetchall()
+        productos = []
+        for row in rows:
+            codigo, descripcion, cantidad, precio = row
+            producto = {'codigo': codigo, 'descripcion': descripcion, 'cantidad': cantidad, 'precio': precio}
+            productos.append(producto)
+        return jsonify(productos), 200
 
 
 #CARRITO
@@ -164,12 +137,10 @@ class Carrito:
 
     def agregar(self, codigo, cantidad, inventario):
         producto = inventario.consultar_producto(codigo)
-        if producto is False:
-            print("El producto no existe.")
-            return False
+        if producto is None:
+            return jsonify({'message': 'El producto no existe.'}), 404
         if producto.cantidad < cantidad:
-            print("Cantidad en stock insuficiente.")
-            return False
+            return jsonify({'message': 'Cantidad en stock insuficiente.'}), 400
 
 
         for item in self.items:
@@ -178,7 +149,7 @@ class Carrito:
                 sql = f'UPDATE productos SET cantidad = cantidad - {cantidad}  WHERE codigo = {codigo};'
                 self.cursor.execute(sql)
                 self.conexion.commit()
-                return True
+                return jsonify({'message': 'Producto agregado al carrito correctamente.'}), 200
 
 
         nuevo_item = Producto(codigo, producto.descripcion, cantidad, producto.precio)
@@ -186,7 +157,7 @@ class Carrito:
         sql = f'UPDATE productos SET cantidad = cantidad - {cantidad}  WHERE codigo = {codigo};'
         self.cursor.execute(sql)
         self.conexion.commit()
-        return True
+        return jsonify({'message': 'Producto agregado al carrito correctamente.'}), 200
 
 
 
@@ -194,48 +165,102 @@ class Carrito:
         for item in self.items:
             if item.codigo == codigo:
                 if cantidad > item.cantidad:
-                    print("Cantidad a quitar mayor a la cantidad en el carrito.")
-                    return False
+                    return jsonify({'message': 'Cantidad a quitar mayor a la cantidad en el carrito.'}), 400
                 item.cantidad -= cantidad
                 if item.cantidad == 0:
                     self.items.remove(item)
                 sql = f'UPDATE productos SET cantidad = cantidad + {cantidad} WHERE codigo = {codigo};'
                 self.cursor.execute(sql)
                 self.conexion.commit()
-                return True
-        print("El producto no se encuentra en el carrito.")
-        return False
+                return jsonify({'message': 'Producto quitado del carrito correctamente.'}), 200
+        return jsonify({'message': 'El producto no se encuentra en el carrito.'}), 404
 
 
     def mostrar(self):
-        print("-"*50)
-        print("Lista de productos en el carrito:")
-        print("Código\tDescripción\tCant\tPrecio")
+        productos_carrito = []
         for item in self.items:
-            print(f'{item.codigo}\t{item.descripcion}\t{item.cantidad}\t{item.precio}')
-        print("-"*50)
+            producto = {'codigo': item.codigo, 'descripcion': item.descripcion, 'cantidad': item.cantidad, 'precio': item.precio}
+            productos_carrito.append(producto)
+        return jsonify(productos_carrito), 200
 
 
-
-# Programa principal
-# Crear la base de datos y la tabla si no existen
-create_database()
+app = Flask(__name__)
 
 
-# Crear una instancia de la clase Inventario
-mi_inventario = Inventario()
+carrito = Carrito()         # Instanciamos un carrito
+inventario = Inventario()   # Instanciamos un inventario
+
+# Ruta para obtener los datos de un producto según su código
+@app.route('/productos/<int:codigo>', methods=['GET'])
+def obtener_producto(codigo):
+    producto = inventario.consultar_producto(codigo)
+    if producto:
+        return jsonify({
+            'codigo': producto.codigo,
+            'descripcion': producto.descripcion,
+            'cantidad': producto.cantidad,
+            'precio': producto.precio
+        }), 200
+    return jsonify({'message': 'Producto no encontrado.'}), 404
+
+# Ruta para obtener el index
+@app.route('/')
+def index():
+    return 'API de Inventario'
+
+# Ruta para agregar un producto al inventario
+@app.route('/productos', methods=['POST'])
+def agregar_producto():
+    codigo = request.json.get('codigo')
+    descripcion = request.json.get('descripcion')
+    cantidad = request.json.get('cantidad')
+    precio = request.json.get('precio')
+    return inventario.agregar_producto(codigo, descripcion, cantidad, precio)
 
 
-# Agregar productos al inventario
-mi_inventario.agregar_producto(1, "Producto 1", 10, 19.99)
-mi_inventario.agregar_producto(2, "Producto 2", 5, 9.99)
-mi_inventario.agregar_producto(3, "Producto 3", 15, 29.99)
+# Ruta para agregar un producto al inventario
+@app.route('/productos', methods=['POST'])
+def agregar_producto():
+    codigo = request.json.get('codigo')
+    descripcion = request.json.get('descripcion')
+    cantidad = request.json.get('cantidad')
+    precio = request.json.get('precio')
+    return inventario.agregar_producto(codigo, descripcion, cantidad, precio)
 
+# Ruta para modificar un producto del inventario
+@app.route('/productos/<int:codigo>', methods=['PUT'])
+def modificar_producto(codigo):
+    nueva_descripcion = request.json.get('descripcion')
+    nueva_cantidad = request.json.get('cantidad')
+    nuevo_precio = request.json.get('precio')
+    return inventario.modificar_producto(codigo, nueva_descripcion, nueva_cantidad, nuevo_precio)
 
-# Consultar algún producto del inventario
-print(mi_inventario.consultar_producto(3)) #Existe, se muestra la dirección de memoria
-print(mi_inventario.consultar_producto(4)) #No existe, se muestra False
+# Ruta para eliminar un producto del inventario
+@app.route('/productos/<int:codigo>', methods=['DELETE'])
+def eliminar_producto(codigo):
+    return inventario.eliminar_producto(codigo)
 
+# Ruta para agregar un producto al carrito
+@app.route('/carrito', methods=['POST'])
+def agregar_carrito():
+    codigo = request.json.get('codigo')
+    cantidad = request.json.get('cantidad')
+    inventario = Inventario()
+    return carrito.agregar(codigo, cantidad, inventario)
 
-# Listar los productos del inventario
-mi_inventario.listar_productos()
+# Ruta para quitar un producto del carrito
+@app.route('/carrito', methods=['DELETE'])
+def quitar_carrito():
+    codigo = request.json.get('codigo')
+    cantidad = request.json.get('cantidad')
+    inventario = Inventario()
+    return carrito.quitar(codigo, cantidad, inventario)
+
+# Ruta para obtener el contenido del carrito
+@app.route('/carrito', methods=['GET'])
+def obtener_carrito():
+    return carrito.mostrar()
+
+# Finalmente, si estamos ejecutando este archivo, lanzamos app.
+if __name__ == '__main__':
+    app.run()
