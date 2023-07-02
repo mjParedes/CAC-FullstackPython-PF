@@ -8,7 +8,7 @@ DATABASE = 'carsInventory.db'
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE, check_same_thread=False)
+    conn = sqlite3.connect(DATABASE)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -69,8 +69,8 @@ class Inventario:
     # Este método permite crear objetos de la clase "Vehiculo" y agregarlos al inventario.
 
     def agregar_vehiculo(self, carId, descripcion, cantidad, precio):
-        producto_existente = self.consultar_vehiculo(carId)
-        if producto_existente:
+        vehiculo_existente = self.consultar_vehiculo(carId)
+        if vehiculo_existente:
             return jsonify({'message': 'Ya existe un vehiculo con ese código.'}), 400
 
         sql = f'INSERT INTO vehiculos VALUES ({carId}, "{descripcion}", {cantidad}, {precio});'
@@ -93,9 +93,9 @@ class Inventario:
     # Utiliza el método consultar_vehiculo del inventario y modificar del vehiculo.
 
     def modificar_vehiculo(self, carId, nueva_descripcion, nueva_cantidad, nuevo_precio):
-        producto = self.consultar_vehiculo(carId)
-        if producto:
-            producto.modificar(nueva_descripcion, nueva_cantidad, nuevo_precio)
+        vehiculo = self.consultar_vehiculo(carId)
+        if vehiculo:
+            vehiculo.modificar(nueva_descripcion, nueva_cantidad, nuevo_precio)
             sql = f'UPDATE vehiculos SET descripcion = "{nueva_descripcion}", cantidad = {nueva_cantidad}, precio = {nuevo_precio} WHERE carId = {carId};'
             self.cursor.execute(sql)
             self.conexion.commit()
@@ -135,7 +135,7 @@ class Carrito:
         self.items = []
 
     def agregar(self, carId, cantidad, inventario):
-        vehiculo = inventario.consultar_producto(carId)
+        vehiculo = inventario.consultar_vehiculo(carId)
         if vehiculo is None:
             return jsonify({'message': 'El vehiculo no existe.'}), 404
         if vehiculo.cantidad < cantidad:
@@ -229,7 +229,7 @@ def modificar_vehiculo(carId):
     nueva_descripcion = request.json.get('descripcion')
     nueva_cantidad = request.json.get('cantidad')
     nuevo_precio = request.json.get('precio')
-    return inventario.modificar_producto(carId, nueva_descripcion, nueva_cantidad, nuevo_precio)
+    return inventario.modificar_vehiculo(carId, nueva_descripcion, nueva_cantidad, nuevo_precio)
 
 # Ruta para eliminar un producto del inventario
 
