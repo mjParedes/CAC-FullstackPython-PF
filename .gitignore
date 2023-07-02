@@ -1,0 +1,11 @@
+etapa2/__pycache__/
+etapa2/models/__pycache__/
+etapa2/tests/__pycache__/
+
+etapa1/__pycache__/
+
+cars-restapi/.venv/
+
+cars-restapi/__pycache__/
+cars-restapi/resources/__pycache__/
+
