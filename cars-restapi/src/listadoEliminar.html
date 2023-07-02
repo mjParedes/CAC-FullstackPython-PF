@@ -26,11 +26,11 @@
         </thead>
         <tbody>
             <tr v-for="vehiculo in vehiculos">
-                <td>{{ vehiculo.codigo }}</td>
+                <td>{{ vehiculo.carId }}</td>
                 <td>{{ vehiculo.descripcion }}</td>
                 <td align="right">{{ vehiculo.cantidad }}</td>
                 <td align="right">{{ vehiculo.precio }}</td>
-                <td><button @click="eliminarVehiculo(vehiculo.codigo)">Eliminar</button></td>
+                <td><button @click="eliminarVehiculo(vehiculo.carId)">Eliminar</button></td>
             </tr>
         </tbody>
     </table>
@@ -54,7 +54,7 @@
                     const URL = "http://losleotodos.pythonanywhere.com/"
 
 
-                    fetch(URL + 'productos')
+                    fetch(URL + 'vehiculos')
                         .then(response => {
                             if (response.ok) {
                                 return response.json()
@@ -70,7 +70,7 @@
                             alert('Error al obtener los vehiculos.')
                         })
                 },
-                eliminarProducto(carId) {
+                eliminarVehiculo(carId) {
                     const URL = "http://losleotodos.pythonanywhere.com/"
 
 

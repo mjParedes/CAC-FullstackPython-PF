@@ -17,7 +17,7 @@
     <table>
         <thead>
             <tr>
-                <th>Código</th>
+                <th>CarId</th>
                 <th>Descripción</th>
                 <th>Cantidad</th>
                 <th align="right">Precio</th>
@@ -54,7 +54,7 @@
                 // Iteramos sobre los vehiculos y agregamos filas a la tabla
                 data.forEach(function (vehiculo) {
                     var fila = document.createElement('tr')
-                    fila.innerHTML = '<td>' + vehiculo.codigo + '</td>' +
+                    fila.innerHTML = '<td>' + vehiculo.carId + '</td>' +
                         '<td>' + vehiculo.descripcion + '</td>' +
                         '<td align="right">' + vehiculo.cantidad + '</td>' +
                         '<td align="right">&nbsp; &nbsp;&nbsp; &nbsp;' + vehiculo.precio + '</td>'
