@@ -1,5 +1,6 @@
 import sqlite3
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 
 # Configurar la conexión a la base de datos SQLite
@@ -73,7 +74,7 @@ class Inventario:
         producto_existente = self.consultar_producto(codigo)
         if producto_existente:
             return jsonify({'message': 'Ya existe un producto con ese código.'}), 400
-        
+
         sql = f'INSERT INTO productos VALUES ({codigo}, "{descripcion}", {cantidad}, {precio});'
         self.cursor.execute(sql)
         self.conexion.commit()
@@ -185,7 +186,7 @@ class Carrito:
 
 
 app = Flask(__name__)
-
+CORS(app)
 
 carrito = Carrito()         # Instanciamos un carrito
 inventario = Inventario()   # Instanciamos un inventario
@@ -208,6 +209,11 @@ def obtener_producto(codigo):
 def index():
     return 'API de Inventario'
 
+# Ruta para obtener la lista de productos del inventario
+@app.route('/productos', methods=['GET'])
+def obtener_productos():
+    return inventario.listar_productos()
+
 # Ruta para agregar un producto al inventario
 @app.route('/productos', methods=['POST'])
 def agregar_producto():
@@ -218,14 +224,6 @@ def agregar_producto():
     return inventario.agregar_producto(codigo, descripcion, cantidad, precio)
 
 
-# Ruta para agregar un producto al inventario
-@app.route('/productos', methods=['POST'])
-def agregar_producto():
-    codigo = request.json.get('codigo')
-    descripcion = request.json.get('descripcion')
-    cantidad = request.json.get('cantidad')
-    precio = request.json.get('precio')
-    return inventario.agregar_producto(codigo, descripcion, cantidad, precio)
 
 # Ruta para modificar un producto del inventario
 @app.route('/productos/<int:codigo>', methods=['PUT'])
