@@ -9,3 +9,4 @@ cars-restapi/.venv/
 cars-restapi/__pycache__/
 cars-restapi/resources/__pycache__/
 
+.venv/
